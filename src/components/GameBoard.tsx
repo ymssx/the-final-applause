@@ -1,0 +1,78 @@
+// ============================================
+// 🏛️ 游戏主界面组件
+// ============================================
+import { useGameStore } from '../game/store';
+import { MOOD_DEFINITIONS } from '../game/data';
+import { OfficialCards } from './OfficialCards';
+import { HandArea } from './HandArea';
+import { EventArea } from './EventArea';
+import { PlayerProfile } from './PlayerProfile';
+import { LogPanel } from './LogPanel';
+import { MessageOverlay } from './MessageOverlay';
+import { DayTransition } from './DayTransition';
+
+export function GameBoard() {
+  const {
+    day, act, phase, leaderMood, clues, actionsRemaining,
+    purgeThreshold, showDayTransition, delayedActions,
+  } = useGameStore();
+  
+  const actNames = { 1: '第一幕：求生', 2: '第二幕：攀升', 3: '第三幕：登顶', 4: '尾声' };
+  const moodDef = MOOD_DEFINITIONS[leaderMood.type];
+  
+  return (
+    <>
+      {showDayTransition && <DayTransition />}
+      
+      <div className="game-main scanlines">
+        {/* 顶部：领袖区域 */}
+        <div className="leader-area">
+          <div className="leader-mood">
+            <span className="mood-icon">{moodDef.icon}</span>
+            <span className="mood-name">{moodDef.name}</span>
+            <span className="mood-desc">— {moodDef.description}</span>
+          </div>
+          
+          <div className="day-info">
+            <span>{actNames[act]}</span>
+            <span>第 {day} 天</span>
+            <span className="threshold">
+              清洗线: {purgeThreshold.toFixed(1)}
+            </span>
+            {phase === 'play_cards' && (
+              <span>剩余行动: {actionsRemaining}</span>
+            )}
+          </div>
+        </div>
+        
+        {/* 中间区域 */}
+        <div className="main-content">
+          <div className="content-left">
+            <OfficialCards />
+            <EventArea />
+          </div>
+          <div className="content-right">
+            <PlayerProfile />
+            {delayedActions.length > 0 && (
+              <div className="delayed-actions">
+                <h4>⏳ 调查队列</h4>
+                {delayedActions.map(a => (
+                  <div key={a.id} className="delayed-item">
+                    {a.description} <span className="days">[{a.daysRemaining}天]</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <LogPanel />
+          </div>
+        </div>
+        
+        {/* 底部：手牌 */}
+        {(phase === 'play_cards') && <HandArea />}
+        
+        {/* 消息弹窗 */}
+        <MessageOverlay />
+      </div>
+    </>
+  );
+}
