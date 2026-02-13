@@ -69,16 +69,13 @@ export function OfficialCards() {
             <div className="title">{official.title}</div>
             
             {isDead && (
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
+              <div className="dead-label" style={{
                 fontFamily: 'var(--font-ui)',
                 fontSize: '12px',
                 fontWeight: '700',
                 color: 'var(--red)',
                 letterSpacing: '3px',
+                marginLeft: 'auto',
               }}>
                 [已清洗]
               </div>
@@ -86,15 +83,7 @@ export function OfficialCards() {
             
             {/* 模糊状态 */}
             {official.isAlive && (
-              <div className="official-mood" style={{
-                fontSize: '11px',
-                color: 'var(--text-dim)',
-                fontFamily: 'var(--font-serif)',
-                fontStyle: 'italic',
-                marginTop: '4px',
-                lineHeight: 1.3,
-                minHeight: '28px',
-              }}>
+              <div className="official-mood">
                 {mood}
               </div>
             )}

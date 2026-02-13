@@ -52,6 +52,8 @@ export function GameBoard() {
             {phase === 'play_cards' && (
               <span>剩余行动: {actionsRemaining}</span>
             )}
+            {/* 日志按钮放在顶栏 */}
+            <LogPanel />
           </div>
         </div>
         
@@ -73,7 +75,6 @@ export function GameBoard() {
                 ))}
               </div>
             )}
-            <LogPanel />
           </div>
         </div>
         

@@ -4,7 +4,7 @@
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { GameState, Card, LogEntry, Official, NpcDialogue } from './types';
+import type { GameState, Card, LogEntry, Official } from './types';
 import {
   createInitialState,
   resolveCard,
@@ -16,7 +16,6 @@ import {
   generateQuestion,
   resolveRandomEvent,
   checkVictory,
-  drawHand,
   generateNpcDialogue,
 } from './engine';
 import { RANDOM_EVENTS, PLAYER_DEATH_TEXTS, getRandomItem, PLAY_LINES } from './data';
