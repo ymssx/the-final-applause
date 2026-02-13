@@ -20,6 +20,14 @@ export function GameBoard() {
   const actNames = { 1: '第一幕：求生', 2: '第二幕：攀升', 3: '第三幕：登顶', 4: '尾声' };
   const moodDef = MOOD_DEFINITIONS[leaderMood.type];
   
+  // 清洗压力的模糊描述
+  const getPurgePressure = () => {
+    if (purgeThreshold >= 4.5) return '空气尚可呼吸';
+    if (purgeThreshold >= 3.5) return '走廊里的脚步声变多了';
+    if (purgeThreshold >= 2.5) return '今晚有人会消失';
+    return '几乎所有人都在颤抖';
+  };
+  
   return (
     <>
       {showDayTransition && <DayTransition />}
@@ -36,8 +44,10 @@ export function GameBoard() {
           <div className="day-info">
             <span>{actNames[act]}</span>
             <span>第 {day} 天</span>
-            <span className="threshold">
-              清洗线: {purgeThreshold.toFixed(1)}
+            <span className="threshold" style={{
+              color: purgeThreshold <= 2.5 ? 'var(--red-bright)' : purgeThreshold <= 3.5 ? 'var(--yellow)' : 'var(--text-dim)',
+            }}>
+              {getPurgePressure()}
             </span>
             {phase === 'play_cards' && (
               <span>剩余行动: {actionsRemaining}</span>
@@ -68,7 +78,7 @@ export function GameBoard() {
         </div>
         
         {/* 底部：手牌 */}
-        {(phase === 'play_cards') && <HandArea />}
+        {(phase === 'play_cards' || phase === 'npc_dialogue') && <HandArea />}
         
         {/* 消息弹窗 */}
         <MessageOverlay />

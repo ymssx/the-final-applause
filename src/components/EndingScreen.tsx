@@ -32,6 +32,10 @@ export function EndingScreen() {
       texts = VICTORY_TEXTS.last_standing;
       title = '最后的幸存者';
       break;
+    case 'hollow':
+      texts = VICTORY_TEXTS.hollow;
+      title = '空壳';
+      break;
     default:
       texts = ['游戏结束。'];
       title = '结束';

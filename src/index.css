@@ -55,12 +55,15 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent; /* 去除移动端点击高亮 */
 }
 
 html, body, #root {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  overscroll-behavior: none; /* 防止下拉刷新等 */
+  touch-action: manipulation; /* 禁止双击缩放 */
 }
 
 body {
@@ -818,29 +821,48 @@ body {
 /* ============ 消息弹窗 ============ */
 .message-overlay {
   position: fixed;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   z-index: 50;
-  animation: slideUp 0.3s ease-out;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 80px;
+  background: rgba(0, 0, 0, 0.4);
+  cursor: pointer;
 }
 
 .message-box {
-  background: var(--bg-dark);
-  border: var(--pixel-border-light);
-  padding: 12px 20px;
-  max-width: 500px;
-  min-width: 300px;
+  background: var(--bg-darkest);
+  border: 2px solid var(--border-light);
+  border-top: 3px solid var(--red);
+  padding: 16px 24px;
+  max-width: 560px;
+  min-width: 340px;
   text-align: center;
-  cursor: pointer;
-  box-shadow: 0 4px 20px var(--shadow);
+  box-shadow: 0 -4px 30px var(--shadow), 0 0 60px rgba(139, 32, 32, 0.15);
+  position: relative;
+}
+
+.message-box::before {
+  content: '▼';
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--red);
+  animation: blink 1s infinite;
 }
 
 .message-box .message-text {
-  font-family: var(--font-body);
-  font-size: 15px;
+  font-family: var(--font-serif);
+  font-size: 16px;
   color: var(--text-bright);
-  line-height: 1.8;
+  line-height: 2;
+  margin-bottom: 8px;
 }
 
 .message-box .message-hint {
@@ -848,6 +870,9 @@ body {
   font-size: 11px;
   color: var(--text-dim);
   margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  animation: blink 2.5s infinite;
 }
 
 /* ============ 结局画面 ============ */
@@ -962,8 +987,8 @@ body {
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes blink {
@@ -993,32 +1018,413 @@ body {
   animation: shake 0.3s ease-out;
 }
 
-/* ============ 响应式 ============ */
+/* ============ 响应式 — 手机端适配 ============ */
 @media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+  
+  /* 主布局改为纵向流 */
+  .game-main {
+    grid-template-rows: auto 1fr auto;
+    height: 100vh;
+    height: 100dvh; /* 移动端安全视窗高度 */
+  }
+  
+  /* 顶部领袖区域：紧凑化 */
+  .leader-area {
+    padding: 6px 10px;
+    gap: 6px;
+    min-height: 42px;
+    flex-wrap: wrap;
+  }
+  
+  .leader-mood {
+    font-size: 12px;
+    padding: 2px 8px;
+    gap: 4px;
+  }
+  
+  .leader-mood .mood-desc {
+    display: none; /* 手机端隐藏描述，只显示图标和名称 */
+  }
+  
+  .day-info {
+    font-size: 11px;
+    gap: 8px;
+  }
+  
+  /* 中间区域：单列，右侧面板折叠 */
   .main-content {
     grid-template-columns: 1fr;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   .content-right {
     border-left: none;
     border-top: var(--pixel-border);
-    max-height: 200px;
+    max-height: none; /* 不限制高度 */
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
   }
   
+  .content-right .player-profile {
+    border-right: var(--pixel-border);
+  }
+  
+  .content-right .log-area {
+    max-height: 150px;
+  }
+  
+  .content-right .delayed-actions {
+    grid-column: 1 / -1;
+    border-bottom: var(--pixel-border);
+  }
+  
+  /* 官员区域：横向滑动 */
   .officials-area {
     overflow-x: auto;
+    flex-wrap: nowrap;
+    padding: 6px;
+    gap: 6px;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
   }
   
   .official-card {
+    min-width: 100px;
+    max-width: 120px;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    padding: 5px 6px;
+  }
+  
+  .official-card .icon {
+    font-size: 18px;
+  }
+  
+  .official-card .name {
+    font-size: 12px;
+  }
+  
+  .official-card .title {
+    font-size: 11px;
+  }
+  
+  .official-card .trait {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+  
+  .official-mood {
+    font-size: 10px !important;
+    min-height: 22px !important;
+  }
+  
+  /* 事件区域 */
+  .event-area {
+    padding: 8px;
+    gap: 6px;
+  }
+  
+  .event-card {
+    padding: 10px;
+  }
+  
+  .event-card .event-title {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  
+  .event-card .event-text {
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  
+  .event-card .event-flavor {
+    font-size: 12px;
+  }
+  
+  .clue-item {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+  
+  .phase-label {
+    font-size: 11px;
+    letter-spacing: 3px;
+    padding: 4px 0;
+  }
+  
+  /* 领袖提问/NPC对话选项 */
+  .question-options {
+    gap: 5px;
+  }
+  
+  .question-option {
+    padding: 8px 10px;
+  }
+  
+  .question-option .option-text {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  
+  .question-option .option-risk {
+    font-size: 11px;
+  }
+  
+  /* 手牌区域：纵向紧凑 */
+  .hand-area {
+    padding: 6px 8px;
+    gap: 6px;
+    flex-direction: column;
+    max-height: 45vh;
+    overflow-y: auto;
+  }
+  
+  .hand-cards {
+    gap: 5px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    flex-shrink: 0;
+  }
+  
+  .hand-card {
     min-width: 90px;
+    max-width: 110px;
+    padding: 5px 6px;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+  
+  .hand-card .card-icon {
+    font-size: 16px;
+  }
+  
+  .hand-card .card-name {
+    font-size: 12px;
+  }
+  
+  .hand-card .card-desc {
+    font-size: 11px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .hand-card:hover {
+    transform: translateY(-2px);
+  }
+  
+  .hand-card.selected {
+    transform: translateY(-4px);
+  }
+  
+  .hand-actions {
+    flex-direction: row;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  
+  .action-btn {
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+  
+  .actions-remaining {
+    font-size: 11px;
+    width: auto;
+  }
+  
+  /* 消息弹窗 */
+  .message-overlay {
+    padding-bottom: 40px;
+  }
+  
+  .message-box {
+    max-width: calc(100vw - 24px);
+    min-width: 280px;
+    padding: 14px 16px;
+  }
+  
+  .message-box .message-text {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+  
+  .message-box .message-hint {
+    font-size: 10px;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  /* 标题画面 */
+  .title-screen h1 {
+    font-size: 22px;
+    letter-spacing: 3px;
+  }
+  
+  .title-subtitle {
+    font-size: 13px;
+    letter-spacing: 2px;
+  }
+  
+  .title-location {
+    font-size: 12px;
+    margin-bottom: 32px;
+  }
+  
+  .title-start-btn {
+    font-size: 13px;
+    padding: 10px 24px;
+  }
+  
+  /* 开场文字 */
+  .intro-screen {
+    padding: 24px;
+  }
+  
+  .intro-line {
+    font-size: 15px;
+    line-height: 2.0;
+  }
+  
+  /* 日间过渡 */
+  .day-transition h2 {
+    font-size: 22px;
+  }
+  
+  .day-transition p {
+    font-size: 14px;
+    max-width: 340px;
+    line-height: 1.8;
+  }
+  
+  /* 结局画面 */
+  .ending-screen {
+    padding: 24px;
+  }
+  
+  .ending-screen h1 {
+    font-size: 22px;
+  }
+  
+  .ending-text-line {
+    font-size: 14px;
+    line-height: 2.0;
+  }
+  
+  .ending-stats {
+    padding: 12px 16px;
+    width: 100%;
+    max-width: 340px;
+  }
+  
+  /* 玩家档案 */
+  .player-profile {
+    padding: 6px;
+  }
+  
+  .player-profile h3 {
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+  
+  .profile-item {
+    padding: 3px 4px;
+    gap: 6px;
+  }
+  
+  .profile-item .profile-text {
+    font-size: 12px;
+  }
+  
+  /* 日志 */
+  .log-area h3 {
+    font-size: 11px;
+  }
+  
+  .log-entry {
+    font-size: 12px;
+  }
+  
+  /* 延迟炸弹 */
+  .delayed-actions {
+    padding: 4px 6px;
+  }
+  
+  .delayed-actions h4 {
+    font-size: 11px;
+  }
+  
+  .delayed-item {
+    font-size: 12px;
+  }
+  
+  /* 简报按钮等 */
+  .briefing-proceed-btn,
+  .continue-btn {
+    font-size: 12px;
+    padding: 8px 20px;
+  }
+}
+
+/* ============ 超小屏幕 (<=480px) ============ */
+@media (max-width: 480px) {
+  .leader-area {
+    padding: 4px 8px;
+    min-height: 36px;
+  }
+  
+  .leader-mood {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+  
+  .day-info {
+    font-size: 10px;
+    gap: 6px;
+  }
+  
+  .official-card {
+    min-width: 88px;
+    max-width: 100px;
   }
   
   .hand-card {
     min-width: 80px;
+    max-width: 100px;
+  }
+  
+  .content-right {
+    grid-template-columns: 1fr;
+  }
+  
+  .content-right .player-profile {
+    border-right: none;
+    border-bottom: var(--pixel-border);
+  }
+  
+  .message-box {
+    min-width: 260px;
+    padding: 12px;
+  }
+  
+  .message-box .message-text {
+    font-size: 13px;
+    line-height: 1.7;
   }
   
   .title-screen h1 {
     font-size: 18px;
+    letter-spacing: 2px;
   }
 }
 
@@ -1095,4 +1501,67 @@ body {
   padding: 6px 0;
   border-bottom: 1px dashed var(--border);
   margin-bottom: 8px;
+}
+
+/* ============ 模糊档案面板 ============ */
+.profile-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  margin-bottom: 2px;
+  border-left: 2px solid var(--border);
+  transition: all 0.3s;
+}
+
+.profile-item .profile-icon {
+  font-size: 13px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.profile-item .profile-text {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.profile-item.safe {
+  border-left-color: var(--green);
+  color: var(--text-secondary);
+}
+
+.profile-item.warn {
+  border-left-color: var(--yellow);
+  color: var(--yellow-bright);
+}
+
+.profile-item.danger {
+  border-left-color: var(--red);
+  color: var(--red-bright);
+}
+
+.profile-item.critical {
+  border-left-color: var(--red-bright);
+  color: var(--red-bright);
+  animation: blink 1.2s infinite;
+  background: rgba(180, 30, 30, 0.1);
+}
+
+/* ============ 系统线索样式 ============ */
+.clue-item.system-clue {
+  border-left-color: var(--blue);
+  background: rgba(30, 58, 90, 0.15);
+}
+
+/* ============ 官员模糊状态 ============ */
+.official-mood {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: var(--font-serif);
+  font-style: italic;
+  margin-top: 4px;
+  line-height: 1.3;
+  min-height: 28px;
 }

@@ -6,10 +6,10 @@ import { MOOD_DEFINITIONS } from '../game/data';
 
 export function EventArea() {
   const {
-    phase, clues, leaderMood, currentEvent, currentQuestion, day,
+    phase, clues, leaderMood, currentEvent, currentQuestion, currentNpcDialogue, day,
   } = useGameStore();
   const {
-    proceedFromBriefing, resolveEvent, answerQuestion,
+    proceedFromBriefing, resolveEvent, answerQuestion, answerNpcDialogue,
     processDayEnd, nextDay,
   } = useGameStore();
   
@@ -32,10 +32,13 @@ export function EventArea() {
           </div>
           
           <div className="event-card">
-            <div className="event-title">▌ 会议桌线索</div>
+            <div className="event-title">▌ 会议桌观察</div>
+            <div className="event-flavor" style={{ fontSize: '12px', marginBottom: '8px', color: 'var(--text-dim)' }}>
+              你环顾四周，注意到了一些事情……
+            </div>
             {clues.map(clue => (
-              <div key={clue.id} className={`clue-item ${clue.type === 'misleading' ? 'misleading' : ''}`}>
-                {clue.text}
+              <div key={clue.id} className={`clue-item ${clue.type === 'misleading' ? 'misleading' : clue.type === 'system' ? 'system-clue' : ''}`}>
+                {clue.type === 'system' ? '⚙ ' : '👁 '}{clue.text}
               </div>
             ))}
           </div>
@@ -51,17 +54,58 @@ export function EventArea() {
         <>
           <div className="phase-label">🃏 行 动 阶 段</div>
           <div className="event-card">
-            <div className="event-flavor">
-              选择手牌打出。需要目标的卡牌请先点击官员。每天2次行动机会。
+            <div className="event-flavor" style={{ fontSize: '12px' }}>
+              领袖今天心情<strong>{MOOD_DEFINITIONS[leaderMood.type].name}</strong>。
+              {leaderMood.type === 'pleased' && ' 也许是献颂词的好时机。'}
+              {leaderMood.type === 'suspicious' && ' 不要做任何引人注目的事。'}
+              {leaderMood.type === 'furious' && ' 有人今天必须消失。确保那个人不是你。'}
+              {leaderMood.type === 'paranoid' && ' 举报不消耗行动。这是试探还是陷阱？'}
+              {leaderMood.type === 'nostalgic' && ' 他在回忆过去。空话打动不了他。'}
+              {leaderMood.type === 'generous' && ' 难得的好日子。但好运不会持续。'}
             </div>
           </div>
           
           {/* 保持线索可见 */}
-          {clues.map(clue => (
-            <div key={clue.id} className={`clue-item ${clue.type === 'misleading' ? 'misleading' : ''}`}>
-              {clue.text}
+          <div style={{ opacity: 0.8 }}>
+            {clues.map(clue => (
+              <div key={clue.id} className={`clue-item ${clue.type === 'misleading' ? 'misleading' : clue.type === 'system' ? 'system-clue' : ''}`}>
+                {clue.type === 'system' ? '⚙ ' : '👁 '}{clue.text}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      
+      {/* === NPC对话 === */}
+      {phase === 'npc_dialogue' && currentNpcDialogue && (
+        <>
+          <div className="phase-label">💬 有 人 搭 话</div>
+          <div className="event-card npc-dialogue-card" style={{ borderColor: 'var(--yellow)' }}>
+            <div className="event-title" style={{ color: 'var(--yellow-bright)' }}>
+              {currentNpcDialogue.officialIcon} {currentNpcDialogue.officialName}
             </div>
-          ))}
+            <div className="event-text" style={{ 
+              whiteSpace: 'pre-line', 
+              fontSize: '15px', 
+              lineHeight: 2,
+              fontFamily: 'var(--font-serif)',
+            }}>
+              {currentNpcDialogue.text.replace(/^"/, '')}
+            </div>
+            
+            <div className="question-options">
+              {currentNpcDialogue.options.map(option => (
+                <div
+                  key={option.id}
+                  className="question-option"
+                  onClick={() => answerNpcDialogue(option.id)}
+                >
+                  <div className="option-text">{option.text}</div>
+                  <div className="option-risk">💭 {option.hint}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </>
       )}
       
@@ -83,10 +127,18 @@ export function EventArea() {
       {/* === 领袖提问 === */}
       {phase === 'leader_question' && currentQuestion && (
         <>
-          <div className="phase-label">👁 领 袖 提 问</div>
-          <div className="event-card">
-            <div className="event-title">▌ 领袖发话了</div>
-            <div className="event-text">{currentQuestion.text}</div>
+          <div className="phase-label" style={{ color: 'var(--red-bright)' }}>👁 领 袖 质 问</div>
+          <div className="event-card" style={{ borderColor: 'var(--red)' }}>
+            <div className="event-title" style={{ color: 'var(--red-bright)' }}>▌ 领袖的目光锁定了你</div>
+            <div className="event-text" style={{ fontSize: '16px', lineHeight: 1.6 }}>{currentQuestion.text}</div>
+            <div style={{ 
+              fontSize: '11px', 
+              color: 'var(--text-dim)', 
+              fontStyle: 'italic',
+              marginTop: '4px',
+            }}>
+              房间里安静得能听到心跳。所有人都在看你。
+            </div>
             
             <div className="question-options">
               {currentQuestion.options.map(option => (

@@ -95,6 +95,30 @@ export interface LeaderOption {
   effects: (gameState: GameState) => { loyalty: number; suspicion: number; power: number; humanity: number; description: string };
 }
 
+/** NPC对话 */
+export interface NpcDialogue {
+  id: string;
+  officialId: string;
+  officialName: string;
+  officialIcon: string;
+  text: string; // NPC说的话
+  options: NpcDialogueOption[];
+}
+
+export interface NpcDialogueOption {
+  id: string;
+  text: string;
+  hint: string; // 风险提示
+  effects: {
+    loyalty: number;
+    suspicion: number;
+    power: number;
+    humanity: number;
+    favorability: number; // 对该NPC好感变化
+    description: string;
+  };
+}
+
 /** 突发事件 */
 export interface RandomEvent {
   id: string;
@@ -115,6 +139,7 @@ export type GamePhase =
   | 'intro'           // 开场文字
   | 'morning_briefing' // 晨间简报
   | 'play_cards'      // 打牌阶段
+  | 'npc_dialogue'    // NPC对话
   | 'random_event'    // 突发事件
   | 'leader_question' // 领袖提问
   | 'day_end'         // 日终结算
@@ -162,13 +187,14 @@ export interface GameState {
   // 当天事件
   currentEvent?: RandomEvent;
   currentQuestion?: LeaderQuestion;
+  currentNpcDialogue?: NpcDialogue;
   selectedCard?: Card;
   selectedTarget?: string;
   
   // 结局
   purgedOfficials: string[];
   purgedByPlayer: number;
-  endingType?: 'purged' | 'survivor' | 'leader' | 'last_standing';
+  endingType?: 'purged' | 'survivor' | 'leader' | 'last_standing' | 'hollow';
   
   // 动画/UI状态
   isAnimating: boolean;

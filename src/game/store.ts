@@ -4,7 +4,7 @@
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { GameState, Card, LogEntry, Official } from './types';
+import type { GameState, Card, LogEntry, Official, NpcDialogue } from './types';
 import {
   createInitialState,
   resolveCard,
@@ -17,8 +17,9 @@ import {
   resolveRandomEvent,
   checkVictory,
   drawHand,
+  generateNpcDialogue,
 } from './engine';
-import { RANDOM_EVENTS, PLAYER_DEATH_TEXTS, getRandomItem } from './data';
+import { RANDOM_EVENTS, PLAYER_DEATH_TEXTS, getRandomItem, PLAY_LINES } from './data';
 
 interface GameStore extends GameState {
   // 游戏流程
@@ -38,6 +39,9 @@ interface GameStore extends GameState {
   
   // 事件
   resolveEvent: () => void;
+  
+  // NPC对话
+  answerNpcDialogue: (optionId: string) => void;
   
   // 领袖提问
   answerQuestion: (optionId: string) => void;
@@ -208,8 +212,9 @@ export const useGameStore = create<GameStore>()(
           s.logs.push({ day: s.day, phase: 'play_cards', text: consecCheck.warning, type: 'warning' });
         }
         
-        // 添加到消息队列
-        s.messageQueue = [...result.logs, result.flavorText].filter(Boolean);
+        // 添加到消息队列（动作台词 → 效果日志 → flavorText）
+        const playLine = getRandomItem(PLAY_LINES[card.type]);
+        s.messageQueue = [playLine, ...result.logs, result.flavorText].filter(Boolean);
         if (consecCheck.warning) {
           s.messageQueue.push(consecCheck.warning);
         }
@@ -217,6 +222,12 @@ export const useGameStore = create<GameStore>()(
         // 清除选择
         s.selectedCard = undefined;
         s.selectedTarget = undefined;
+        
+        // 打牌后尝试生成NPC对话（暂存，等消息消完后触发）
+        const npcDlg = generateNpcDialogue(s as unknown as GameState);
+        if (npcDlg) {
+          s.currentNpcDialogue = npcDlg;
+        }
       });
     },
     
@@ -227,6 +238,44 @@ export const useGameStore = create<GameStore>()(
         s.currentEvent = evt as any;
         s.phase = 'random_event';
         s.messageQueue = [];
+      });
+    },
+    
+    answerNpcDialogue: (optionId: string) => {
+      set((s) => {
+        const dlg = s.currentNpcDialogue;
+        if (!dlg) return;
+        
+        const option = dlg.options.find(o => o.id === optionId);
+        if (!option) return;
+        
+        const eff = option.effects;
+        
+        // 应用玩家属性变化
+        s.player.loyalty = Math.max(0, Math.min(15, s.player.loyalty + eff.loyalty));
+        s.player.suspicion = Math.max(0, Math.min(15, s.player.suspicion + eff.suspicion));
+        s.player.power = Math.max(0, Math.min(15, s.player.power + eff.power));
+        s.player.humanity = Math.max(0, Math.min(10, s.player.humanity + eff.humanity));
+        
+        // 应用NPC好感变化
+        const idx = s.officials.findIndex(o => o.id === dlg.officialId);
+        if (idx >= 0) {
+          s.officials[idx].favorability = Math.max(-10, Math.min(10, s.officials[idx].favorability + eff.favorability));
+          // 更新态度
+          const o = s.officials[idx];
+          if (o.isAlly) o.attitude = 'allied';
+          else if (o.favorability >= 2) o.attitude = 'friendly';
+          else if (o.favorability <= -2) o.attitude = 'hostile';
+          else o.attitude = 'unknown';
+        }
+        
+        // 日志
+        s.logs.push({ day: s.day, phase: 'npc_dialogue', text: eff.description, type: 'info' });
+        s.messageQueue = [eff.description];
+        
+        // 清除对话，回到打牌阶段
+        s.currentNpcDialogue = undefined;
+        s.phase = 'play_cards';
       });
     },
     
@@ -417,6 +466,10 @@ export const useGameStore = create<GameStore>()(
       set((s) => {
         if (s.messageQueue.length > 0) {
           s.messageQueue = s.messageQueue.slice(1);
+          // 消息全部消失后，检查是否有待触发的NPC对话
+          if (s.messageQueue.length === 0 && s.currentNpcDialogue && s.phase === 'play_cards') {
+            s.phase = 'npc_dialogue';
+          }
         }
       });
     },
